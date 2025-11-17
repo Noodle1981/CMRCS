@@ -1,0 +1,297 @@
+¡Claro que sí! Aquí tienes la reestructuración completa del proyecto, diseñada como un CRM interno primero, con todo preparado para evolucionar a una plataforma abierta con API para React.
+
+Este es tu "plano maestro" para el desarrollo.
+
+Nombre del Proyecto (Sugerencia): "Conexión SySO - Plataforma de Gestión"
+Fase 1: CRM Interno y Herramienta de Matching (Laravel + Blade)
+
+El objetivo de esta fase es crear una herramienta robusta para que tu equipo interno gestione prospectos (clientes y proveedores) y encuentre oportunidades de conexión.
+
+1. Estructura de la Base de Datos (Laravel Migrations)
+code
+Bash
+download
+content_copy
+expand_less
+# 1. Usuarios y Roles (El núcleo)
+php artisan make:model User -m
+# Instalar spatie/laravel-permission y seguir sus instrucciones de instalación
+
+# 2. Entidades Principales
+php artisan make:model Company -m      # Clientes
+php artisan make:model Provider -m     # Proveedores / Consultoras
+php artisan make:model Service -m      # Catálogo de Servicios
+
+# 3. Tablas de Relación y Seguimiento
+php artisan make:model Interaction -m # Registro de Actividad
+# Crear migración manual para la tabla pivote provider_service
+
+database/migrations/..._create_users_table.php
+
+code
+PHP
+download
+content_copy
+expand_less
+Schema::create('users', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('email')->unique();
+    $table->string('password');
+    $table->boolean('is_active')->default(true); // Para activar/desactivar usuarios del equipo
+    $table->timestamps();
+});
+
+database/migrations/..._create_providers_table.php
+
+code
+PHP
+download
+content_copy
+expand_less
+Schema::create('providers', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('website_url')->unique()->nullable();
+    $table->enum('provider_type', ['group', 'solo'])->default('group');
+    $table->string('industry')->nullable();
+    $table->string('phone')->nullable();
+    $table->string('address')->nullable();
+    $table->string('city');
+    $table->string('state');
+    $table->string('country');
+    $table->decimal('latitude', 10, 8)->nullable();
+    $table->decimal('longitude', 11, 8)->nullable();
+    $table->foreignId('assigned_to_user_id')->nullable()->constrained('users'); // Asignado a un miembro del equipo
+    $table->timestamps();
+});
+
+database/migrations/..._create_companies_table.php
+
+code
+PHP
+download
+content_copy
+expand_less
+Schema::create('companies', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('website_url')->unique()->nullable();
+    $table->string('industry')->nullable();
+    $table->integer('employee_count')->nullable();
+    $table->string('phone')->nullable();
+    $table->string('address')->nullable();
+    $table->string('city');
+    $table->string('state');
+    $table->string('country');
+    $table->decimal('latitude', 10, 8)->nullable();
+    $table->decimal('longitude', 11, 8)->nullable();
+    $table->foreignId('assigned_to_user_id')->nullable()->constrained('users'); // Asignado a un miembro del equipo
+    $table->timestamps();
+});
+
+database/migrations/..._create_services_table.php
+
+code
+PHP
+download
+content_copy
+expand_less
+Schema::create('services', function (Blueprint $table) {
+    $table->id();
+    $table->string('name')->unique();
+    $table->text('description')->nullable();
+    $table->boolean('is_active')->default(true);
+    $table->timestamps();
+});
+
+database/migrations/..._create_provider_service_table.php (Tabla Pivote)
+
+code
+PHP
+download
+content_copy
+expand_less
+Schema::create('provider_service', function (Blueprint $table) {
+    $table->primary(['provider_id', 'service_id']);
+    $table->foreignId('provider_id')->constrained()->onDelete('cascade');
+    $table->foreignId('service_id')->constrained()->onDelete('cascade');
+});
+
+database/migrations/..._create_interactions_table.php
+
+code
+PHP
+download
+content_copy
+expand_less
+Schema::create('interactions', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained(); // Miembro del equipo que hizo la acción
+    $table->morphs('interactable'); // Asocia con Company o Provider
+    $table->string('type'); // 'Llamada', 'Email', 'Nota'
+    $table->text('notes');
+    $table->timestamps();
+});
+2. Roles y Permisos (Seeders)
+
+Crea un RoleAndPermissionSeeder para configurar los roles iniciales.
+
+code
+PHP
+download
+content_copy
+expand_less
+// Roles
+$superAdmin = Role::create(['name' => 'super-admin']);
+$salesManager = Role::create(['name' => 'sales-manager']);
+$salesAgent = Role::create(['name' => 'sales-agent']);
+
+// Permisos
+Permission::create(['name' => 'manage users']);
+Permission::create(['name' => 'upload csv']);
+Permission::create(['name' => 'assign prospects']);
+Permission::create(['name' => 'view all prospects']);
+Permission::create(['name' => 'manage own prospects']);
+
+// Asignaciones
+$superAdmin->givePermissionTo(Permission::all());
+$salesManager->givePermissionTo(['upload csv', 'assign prospects', 'view all prospects']);
+$salesAgent->givePermissionTo('manage own prospects');
+3. Flujo de Carga de Datos (Panel de Admin con Blade)
+
+Ruta Protegida: /admin/uploads accesible solo para super-admin y sales-manager.
+
+Vista Blade: Un formulario con un <input type="file"> y un selector para "Tipo de CSV" (Companies o Providers).
+
+Proceso:
+
+Controlador: Recibe el archivo y despacha un Job a la cola (ProcessCsvUpload::dispatch(...)).
+
+Job (ProcessCsvUpload):
+
+Lee el CSV fila por fila.
+
+Utiliza Model::updateOrCreate(['website_url' => $row['website']], $data) para evitar duplicados.
+
+Deja assigned_to_user_id como null.
+
+Geocodificación (Opcional pero Recomendado): Despacha otro job (GeocodeEntity::dispatch($entity)) para obtener latitud/longitud a partir de la dirección usando una API, para no ralentizar la importación.
+
+4. Flujo de Trabajo del Equipo (CRM con Blade)
+
+Login: Los usuarios del equipo acceden a través de /login.
+
+Panel de super-admin:
+
+Gestión de Usuarios (/admin/users): Crear/Editar/Desactivar cuentas para el equipo y asignarles roles.
+
+Gestión de Servicios (/admin/services): Crear/Editar el catálogo maestro de servicios que la plataforma ofrecerá.
+
+Acceso a todas las demás vistas de manager.
+
+Panel de sales-manager:
+
+Asignación de Prospectos (/admin/prospects/unassigned):
+
+Ver listas de Companies y Providers con assigned_to_user_id = null.
+
+Seleccionar múltiples y asignarlos a un sales-agent de un menú desplegable.
+
+Vista General (/admin/prospects/all): Ver todos los prospectos y a quién están asignados, con filtros por agente.
+
+Panel de sales-agent:
+
+Dashboard (/admin/dashboard): Vista principal con enlaces a "Mis Clientes" y "Mis Proveedores".
+
+Mis Prospectos (/admin/my-prospects):
+
+Tablas separadas para Companies y Providers donde assigned_to_user_id es el ID del usuario logueado.
+
+La vista debe ser protegida con una Policy para asegurar que solo vea lo suyo.
+
+Página de Detalle del Prospecto (/admin/companies/{id}):
+
+Muestra todos los datos del prospecto.
+
+Sección de Interacciones: Lista todas las notas/llamadas registradas.
+
+Formulario para Registrar Interacción: Permite añadir una nueva interacción rápidamente.
+
+Herramienta de Matching:
+
+En la página de detalle de una Company, un botón "Buscar Match".
+
+Abre un modal donde el agente selecciona un Service del catálogo.
+
+Al enviar, se llama a un controlador que usa el MatchmakingService.
+
+El resultado es una lista de los mejores Providers para esa Company y ese Service, ordenados por puntuación. El agente usa esta información para su llamada de ventas.
+
+Fase 2: Evolución a API para React
+
+Una vez que el backend y la lógica de negocio están validados, exponerlos a través de una API es sencillo.
+
+Autenticación de API:
+
+Instala Laravel Sanctum. Es perfecto para SPAs (Single Page Applications) como React.
+
+Rutas de API (routes/api.php):
+
+Crearás rutas que reflejen las funcionalidades que ya construiste, pero devolviendo JSON.
+
+Todas las rutas estarán protegidas por middleware('auth:sanctum').
+
+Las políticas de acceso y roles de Spatie funcionan igual de bien en el contexto de una API.
+
+Ejemplos de Endpoints de API:
+
+GET /api/v1/companies: Devuelve la lista de compañías asignadas al agente de React logueado.
+
+GET /api/v1/companies/{id}: Devuelve los detalles de una compañía específica (protegido por Policy).
+
+POST /api/v1/companies/{id}/interactions: Crea una nueva interacción para esa compañía.
+
+POST /api/v1/matching/find: Recibe un company_id y un service_id y devuelve la lista de proveedores recomendados en formato JSON.
+
+GET /api/v1/admin/users: (Solo para super-admin) Devuelve la lista de usuarios del equipo.
+
+Desarrollo del Frontend (React):
+
+El equipo de frontend puede empezar a construir la interfaz de usuario basándose en los endpoints definidos.
+
+El frontend consumirá la API de Laravel para mostrar los datos y realizar acciones.
+
+Se creará un Admin Dashboard en React que replique y mejore la funcionalidad de las vistas Blade.
+
+Este plan te da una base sólida y escalable. Empiezas con una herramienta interna que ya genera valor y valida tu lógica, y luego construyes la capa de API sobre una base ya probada.
+
+
+
+revisar 
+
+uploads.blade.php
+(Formulario de carga de CSV)
+
+web.php
+(Define las rutas /cargar-csv y el controlador asociado)
+
+UploadController.php
+(Recibe el archivo, lo valida y despacha el Job)
+
+ProcessCsvUpload.php
+(Procesa el archivo CSV en segundo plano)
+
+filesystems.php
+(Configura el disco y la ruta de almacenamiento)
+
+storage/logs/laravel.log
+(Registra errores y advertencias del proceso)
+
+RoleAndPermissionSeeder.php
+(Define y asigna el permiso upload csv a los roles)
+
+
+
+
+First Name	Last Name	Title	Company Name	Company Name for Emails	Email	Email Status	Departments	Contact Owner	Corporate Phone	# Employees	Industry	Keywords	Person Linkedin Url	Website	Company Linkedin Url	Facebook Url	City	State	Country	Company Address	Company City	Company State	Company Country	Company Phone	Technologies	Annual Revenue
