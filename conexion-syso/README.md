@@ -57,3 +57,109 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+# Despliegue en Producción
+
+## Requisitos
+- PHP >= 8.2
+- Composer
+- Node.js y npm
+- Extensiones PHP: pdo, mbstring, openssl, tokenizer, xml, ctype, json, sqlite (o el driver de tu base de datos)
+- Servidor web: Apache, Nginx o similar
+
+## Instalación
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/Noodle1981/CMRCS.git
+   cd CMRCS/conexion-syso
+   ```
+
+2. **Instalar dependencias**
+   ```bash
+   composer install --optimize-autoloader --no-dev
+   npm install
+   npm run build
+   ```
+
+3. **Configurar variables de entorno**
+   - Copia `.env.example` a `.env` y edita los valores:
+     - `APP_KEY` (genera uno con `php artisan key:generate`)
+     - Configura la base de datos (`DB_CONNECTION`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`)
+     - Configura el correo si lo necesitas
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Migrar la base de datos**
+   ```bash
+   php artisan migrate --force
+   ```
+
+5. **Opcional: Seeders y permisos**
+   ```bash
+   php artisan db:seed --force
+   php artisan storage:link
+   ```
+
+6. **Configurar permisos de carpetas**
+   - El servidor web debe tener permisos de escritura en:
+     - `storage`
+     - `bootstrap/cache`
+
+7. **Configurar cola (si usas jobs)**
+   - En `.env` pon `QUEUE_CONNECTION=database`
+   - Ejecuta el worker en background:
+   ```bash
+   php artisan queue:work --daemon --stop-when-empty
+   ```
+
+8. **Configurar virtual host (Apache/Nginx)**
+   - Apunta el DocumentRoot a `public/`
+   - Configura HTTPS si es posible
+
+9. **Optimizar para producción**
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
+
+---
+
+Para dudas o problemas, revisa los logs en `storage/logs/laravel.log` y asegúrate de que los permisos y variables estén correctamente configurados.
+
+## Uso del Sistema
+
+Este CRM permite gestionar prospectos, compañías y proveedores, con carga masiva de datos por archivo CSV y roles diferenciados.
+
+### Roles principales
+- **Super Admin:** Acceso total, puede crear usuarios, asignar roles y ver métricas internas.
+- **Usuario estándar:** Acceso a sus prospectos, compañías y proveedores asignados.
+
+### Flujo de carga de archivos CSV
+1. **Navegación:**
+   - Desde la vista de proveedores o compañías, encontrarás un botón para cargar datos por CSV.
+   - El botón te lleva a un formulario específico para la entidad (proveedores o compañías).
+
+2. **Carga contextual:**
+   - El formulario solo permite cargar el tipo de entidad correspondiente (no se mezclan datos).
+   - Selecciona el archivo CSV y envíalo.
+
+3. **Procesamiento:**
+   - El archivo se procesa en segundo plano mediante un Job (cola de Laravel).
+   - Los datos se insertan directamente en la tabla correspondiente, respetando los campos del CSV.
+
+4. **Visualización:**
+   - Una vez procesados, los datos aparecen en la tabla de la vista correspondiente.
+   - Si una columna tiene demasiada información (ejemplo: Keywords), se muestra truncada con el resto accesible en un tooltip.
+
+### Recomendaciones para la carga
+- El archivo CSV debe tener los encabezados correctos y coincidir con los campos del sistema.
+- Si la cola está activa (`QUEUE_CONNECTION=database`), el procesamiento será asíncrono y escalable.
+- Revisa los mensajes de éxito o error tras la carga para confirmar el resultado.
+
+---
+
+Para dudas sobre el flujo, roles o carga de archivos, consulta la documentación interna o contacta al administrador del sistema.
