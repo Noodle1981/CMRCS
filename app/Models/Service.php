@@ -10,7 +10,7 @@ class Service extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'is_active'
+        'tipo_servicio', 'description', 'is_active'
     ];
 
     public function providers() {

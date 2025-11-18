@@ -4,15 +4,22 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Service;
 
 class ServiceController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $query = Service::with('providers');
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('tipo_servicio', 'like', "%{$search}%");
+        }
+        $services = $query->orderBy('tipo_servicio')->get();
+        return view('admin.services.index', compact('services'));
     }
 
     /**
