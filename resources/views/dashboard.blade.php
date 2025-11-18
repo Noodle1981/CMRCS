@@ -20,6 +20,7 @@
         <a href="{{ route('prospects.providers') }}" class="btn btn-success">Proveedores asignados</a>
         <a href="{{ route('services.index') }}" class="btn btn-info">Servicios disponibles</a>
         <a href="{{ route('providers.match') }}" class="btn btn-warning">Buscar proveedores por servicio</a>
+        <a href="{{ route('service_categories.index') }}" class="btn btn-secondary">Categorías de servicios</a>
     </div>
 </div>
 @endsection

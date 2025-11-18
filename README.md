@@ -163,3 +163,72 @@ Este CRM permite gestionar prospectos, compañías y proveedores, con carga masi
 ---
 
 Para dudas sobre el flujo, roles o carga de archivos, consulta la documentación interna o contacta al administrador del sistema.
+
+# Documentación del sistema CRMCS
+
+## 1. Estructura y funcionalidades principales
+
+- **Gestión de proveedores y compañías**: Carga masiva por CSV, visualización y navegación por vistas separadas.
+- **Servicios y keywords**: Los servicios se extraen automáticamente de los keywords de cada proveedor y se agrupan por categorías usando sinónimos.
+- **Relaciones**: Proveedores y servicios se relacionan mediante la tabla pivote `provider_service`. Cada servicio puede pertenecer a una categoría (`service_category`).
+- **Búsqueda inteligente**: Desde el dashboard, puedes buscar proveedores por servicio y ubicación (priorizando por estado y ciudad).
+- **Edición manual de categorías**: Puedes editar y asociar servicios a categorías desde el panel de administración.
+
+## 2. Flujo de trabajo
+
+1. **Carga de datos**
+   - Sube el CSV de proveedores o compañías desde la vista correspondiente.
+   - Los datos se procesan y se insertan en la base de datos.
+
+2. **Sincronización de servicios y categorías**
+   - Ejecuta el comando:
+     ```bash
+     php artisan providers:sync-services-categories
+     ```
+   - Esto extrae los keywords, crea servicios únicos y los agrupa automáticamente en categorías según sinónimos.
+
+3. **Visualización y edición**
+   - Accede a `/servicios` para ver el catálogo de servicios y la cantidad de proveedores asociados.
+   - Accede a `/service-categories` para ver y editar las categorías y sus servicios.
+   - Desde la edición de categorías puedes modificar el nombre y los servicios asociados manualmente.
+
+4. **Búsqueda inteligente de proveedores**
+   - Desde el dashboard, accede a "Buscar proveedores por servicio".
+   - Selecciona el servicio, estado y ciudad para priorizar los resultados.
+   - El sistema muestra los proveedores que ofrecen el servicio, ordenados por cercanía.
+
+## 3. Tablas principales
+
+- **providers**: Información de cada proveedor.
+- **services**: Servicios únicos extraídos de los keywords.
+- **service_categories**: Categorías estándar para agrupar servicios similares.
+- **provider_service**: Relación muchos a muchos entre proveedores y servicios.
+
+## 4. Comandos útiles
+
+- Sincronizar servicios y categorías:
+  ```bash
+  php artisan providers:sync-services-categories
+  ```
+- Sincronizar solo servicios:
+  ```bash
+  php artisan providers:sync-services
+  ```
+
+## 5. Personalización
+
+- Puedes agregar más sinónimos y categorías en el comando de sincronización para mejorar la agrupación automática.
+- La edición manual permite corregir y afinar las agrupaciones desde el panel.
+
+## 6. Recomendaciones
+
+- Ejecuta las migraciones antes de sincronizar servicios y categorías:
+  ```bash
+  php artisan migrate
+  ```
+- Revisa y edita las categorías periódicamente para mantener la agrupación relevante.
+- Usa los filtros y buscadores para optimizar la gestión y asignación de proveedores.
+
+---
+
+Para dudas, mejoras o nuevas funcionalidades, consulta la documentación interna o contacta al administrador del sistema.

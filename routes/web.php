@@ -31,6 +31,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/mis-prospectos/companias', [ProspectController::class, 'assignedCompanies'])->name('prospects.companies');
     Route::get('/mis-prospectos/proveedores', [ProspectController::class, 'assignedProviders'])->name('prospects.providers');
     Route::get('/providers/match', [ServiceController::class, 'match'])->name('providers.match');
+    Route::get('/service-categories', [ServiceController::class, 'categories'])->name('service_categories.index');
+    Route::get('/service-categories/{id}/edit', [ServiceController::class, 'editCategory'])->name('service_categories.edit');
+    Route::put('/service-categories/{id}', [ServiceController::class, 'updateCategory'])->name('service_categories.update');
 
 
     // --- ZONA DE ADMINISTRACIÓN ---

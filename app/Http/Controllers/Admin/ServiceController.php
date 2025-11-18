@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Service;
 use App\Models\Provider;
+use App\Models\ServiceCategory;
 
 class ServiceController extends Controller
 {
@@ -93,5 +94,38 @@ class ServiceController extends Controller
             $providers = $query->with('services')->get();
         }
         return view('providers.match', compact('services', 'providers'));
+    }
+
+    /**
+     * Display a listing of service categories and their associated services.
+     */
+    public function categories()
+    {
+        $categories = ServiceCategory::with('services')->orderBy('nombre')->get();
+        return view('admin.service_categories.index', compact('categories'));
+    }
+
+    /**
+     * Show the form for editing the specified service category.
+     */
+    public function editCategory($id)
+    {
+        $category = ServiceCategory::with('services')->findOrFail($id);
+        $allServices = Service::orderBy('tipo_servicio')->get();
+        return view('admin.service_categories.edit', compact('category', 'allServices'));
+    }
+
+    /**
+     * Update the specified service category in storage.
+     */
+    public function updateCategory(Request $request, $id)
+    {
+        $category = ServiceCategory::findOrFail($id);
+        $category->nombre = $request->input('nombre');
+        $category->save();
+        // Actualizar servicios asociados
+        $serviceIds = $request->input('services', []);
+        Service::whereIn('id', $serviceIds)->update(['service_category_id' => $category->id]);
+        return redirect()->route('service_categories.index')->with('success', 'Categoría actualizada correctamente.');
     }
 }
