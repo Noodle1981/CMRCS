@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/servicios/{service}/editar', [ServiceController::class, 'edit'])->name('services.edit');
     Route::get('/mis-prospectos/companias', [ProspectController::class, 'assignedCompanies'])->name('prospects.companies');
     Route::get('/mis-prospectos/proveedores', [ProspectController::class, 'assignedProviders'])->name('prospects.providers');
+    Route::get('/providers/match', [ServiceController::class, 'match'])->name('providers.match');
 
 
     // --- ZONA DE ADMINISTRACIÓN ---

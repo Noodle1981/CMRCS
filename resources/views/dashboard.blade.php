@@ -15,5 +15,11 @@
             <a href="{{ route('uploads.create') }}" class="btn btn-secondary w-100 mb-3">Cargar Prospectos por CSV</a>
         </div>
     </div>
+    <div class="mb-4">
+        <a href="{{ route('prospects.companies') }}" class="btn btn-primary">Compañías asignadas</a>
+        <a href="{{ route('prospects.providers') }}" class="btn btn-success">Proveedores asignados</a>
+        <a href="{{ route('services.index') }}" class="btn btn-info">Servicios disponibles</a>
+        <a href="{{ route('providers.match') }}" class="btn btn-warning">Buscar proveedores por servicio</a>
+    </div>
 </div>
 @endsection

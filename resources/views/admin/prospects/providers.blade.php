@@ -4,7 +4,8 @@
 <div class="container">
     <h2>Proveedores asignados</h2>
     <a href="{{ route('uploads.create') }}?type=providers" class="btn btn-success mb-3">Cargar Proveedores por CSV</a>
-    <table class="table table-bordered table-striped">
+    <div style="overflow-x:auto;">
+    <table class="table table-bordered table-striped" style="width:100%;">
         <thead>
             <tr>
                 <th>First Name</th>
@@ -38,7 +39,7 @@
         </thead>
         <tbody>
             @forelse($providers as $provider)
-                <tr>
+                <tr style="height:40px; vertical-align:middle;">
                     <td>{{ $provider->first_name }}</td>
                     <td>{{ $provider->last_name }}</td>
                     <td>{{ $provider->title }}</td>
@@ -78,5 +79,6 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 @endsection

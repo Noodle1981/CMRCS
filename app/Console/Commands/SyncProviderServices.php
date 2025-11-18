@@ -28,12 +28,12 @@ class SyncProviderServices extends Command
                 // Normalizar nombre
                 $name = Str::limit($keyword, 100);
                 // Buscar o crear el servicio
-                $service = Service::firstOrCreate(['name' => $name], [
+                $service = Service::firstOrCreate(['tipo_servicio' => $name], [
                     'description' => 'Servicio importado desde keywords',
                     'is_active' => true
                 ]);
                 $ids[] = $service->id;
-                $serviciosCreados->push($service->name);
+                $serviciosCreados->push($service->tipo_servicio);
             }
             // Relacionar servicios con el proveedor
             $provider->services()->syncWithoutDetaching($ids);
